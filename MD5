@@ -1,0 +1,8 @@
+805e456616c21bbea3dccca95ed55ccd *DESCRIPTION
+4771d60c9677114921d4d772b799b7a4 *NAMESPACE
+23f5e2dfd0b9f625429ea62f41e8696e *R/timeit.R
+d1e7ce18c2b174988343b511169b3c5e *man/do_timeit.Rd
+6600d88cf86ecb10e9c2c066d584341b *man/mean.timeit.Rd
+41367eaacb752588e3872d7b551dcb6c *man/plot.timeit.Rd
+c40f1b2d9685a06abc3a011aec60594f *man/summary.timeit.Rd
+cc813ff004a2445803c6e2620d1d7e45 *man/timeit.Rd
