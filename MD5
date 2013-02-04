@@ -1,10 +1,10 @@
-ef6a3558feb3f1f52059292e64704faa *DESCRIPTION
+8a8edcf1f8db0b9ba423d20cb05613b2 *DESCRIPTION
 94327c220532e0ae289e2e4c26080e5f *NAMESPACE
-00882efeb3bdf04e041ef5a9a3bb0803 *NEWS
-0dc3839e4021181e7288a43c55c15b80 *R/timeit.R
-d4101532ba83fc5e42820d8373e5d49b *man/determine_replications.Rd
-0fd12fd1c6063c5cdabee02d7095b545 *man/do_timeit.Rd
+f1c445f041f56aa9e8b61c7fad5ee78f *NEWS
+725a3e0239392a78864ad3302aa191fd *R/timeit.R
+048443e65fcd6fe8462e7fa045677aca *man/determine_replications.Rd
+5fbdb106f49d5dd25f2f454c40150e23 *man/do_timeit.Rd
 6600d88cf86ecb10e9c2c066d584341b *man/mean.timeit.Rd
 10995f6328f50c7e11ab027e1fede515 *man/plot.timeit.Rd
 a93c4d0eb89846bc90b459f2a3ef86a7 *man/summary.timeit.Rd
-e337f93500a30b9ab83ac5b73f0e6582 *man/timeit.Rd
+f1b72bc43b9586714ccaf71d4dc195e8 *man/timeit.Rd

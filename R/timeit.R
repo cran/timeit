@@ -4,7 +4,7 @@
 #' profile hand-holding and provides easier usage. This allows you to profile
 #' either a single function call, or a whole block. Evaluation can be run
 #' multiple times in order to assess variability in the timings of each
-#' function call (to some level of precision).
+#' function call.
 #' 
 #' Function calls that get executed very quickly will be missed
 #' by \code{Rprof}, unless you set \code{interval} very low. However, doing
@@ -19,11 +19,11 @@
 #' we should 'guess' an appropriate number of replications. 
 #' in order to more accurately profile
 #' quickly-running functions, we run the call \code{replications} times,
-#' and then infer the run-time as \code{<time>/replications}.
+#' and then infer the run-time as \code{<time>} / \code{replications}.
 #' by default, the argument is \code{NULL} and we attempt to infer an
 #' appropriate number of replications.
 #' @param interval real. time interval between samples.
-#' @param memory.profiling logical. write memory use information to file?
+#' @param memory.profiling logical. output memory usage statistics?
 #' @param times integer. how many times to call the function?
 #' @param show.warnings boolean. output a warning if any iteration of the
 #' run did not produce results?
@@ -35,22 +35,22 @@
 #' 
 #' Currently, \code{timeit} does not support passing through of arguments,
 #' so don't try to wrap \code{timeit} in a function call, whereby the 
-#' call it attempts to evaluate is passed from a parent function. Eg;
+#' call it attempts to evaluate is passed from a parent function. For example,
 #' 
 #' \code{f <- function(x) { timeit(x) }; f(rnorm(10))} 
 #' 
 #' won't work properly; a fix may come in the future.
 #' 
 #' @export
-#' @return an object of S3 classes \code{timeit} and \code{data.frame}.
+#' @return An object of S3 classes \code{timeit} and \code{data.frame}.
 #' @seealso \code{\link{mean.timeit}} for mean running times over all
 #' iterations processed, \code{\link{summary.timeit}} for summary
 #' statistics,
 #' \code{\link{plot.timeit}} for generating a boxplot of the returned
 #' times, \code{\link{do_timeit}} for the workhorse function, and 
-#' \code{\link{Rprof}} for information on how \R profiles 
-#' execution of \R expressions.
-#' @examples
+#' \code{\link{Rprof}} for information on how \R profiles the
+#' execution of expressions.
+#' @examples \dontrun{
 #' tmp <- timeit({
 #'   x <- 1:1E4; y <- x + runif(1E4)
 #'   lm( y ~ x )
@@ -59,9 +59,11 @@
 #' y <- 1E4
 #' f <- function(x) { summary( sort( rnorm(x) ) ) }
 #' tmp <- timeit( f(y), times=5 )
-#' summary(tmp)
-#' mean(tmp)
-#' plot(tmp)
+#' if( !is.null(tmp) ) {
+#'   summary(tmp)
+#'   mean(tmp)
+#'   if( require(ggplot2) ) { plot(tmp) }
+#' }}
 timeit <- function(call,
                    replications=NULL,
                    interval=0.01,
@@ -77,9 +79,17 @@ timeit <- function(call,
   }
   
   call_me <- match.call()$call
+  if( length( grep( "^ ?call ?$", as.character(call_me), perl=TRUE ) ) > 0 ) {
+    stop("'call' cannot be used as a variable / function name within your code block")
+  }
   
   if( is.null(replications) ) {
+    cat("Determining an appropriate number of replications... ")
     replications <- determine_replications( call_me, interval )
+    cat("Done!\n", 
+        replications, 
+        if(replications==1) "replication" else "replications",
+        "will be used.\n\n")
   }
   
   out_list <- vector("list", times)
@@ -93,16 +103,17 @@ timeit <- function(call,
                                 show.warnings=show.warnings, 
                                 i=i )
     
-    ## re-extend out_list in-case it has shrunk due to error
+    ## re-extend out_list in case it has shrunk
     out_list[times*2] <- NULL
   }
   
-  out_list <- out_list[ sapply( out_list, function(x) { !is.null(x) } ) ]
   if( length( out_list ) == 0 ) {
     warning("No events were recorded. Try ",
             "setting 'replications' higher in the 'timeit' call.")
     return( invisible(NULL) )
   }
+  
+  out_list <- out_list[ sapply( out_list, function(x) { !is.null(x) } ) ]
   
   out <- as.data.frame( stringsAsFactors=FALSE, optional=TRUE,
                         do.call( rbind, out_list )
@@ -132,8 +143,8 @@ determine_replications <- function( call, interval, base=1E6 ) {
 
 #' Profile a Function Call
 #' 
-#' This is the workhorse function called by \code{\link{timeit}}.
-#' Primarily meant to be called through \code{\link{timeit}}. However,
+#' This is the workhorse function called by \code{\link{timeit}}, and is
+#' primarily meant to be called through \code{\link{timeit}}. However,
 #' if you desire a more direct wrapper to \code{Rprof} then this can
 #' be useful.
 #' @param call a call (typically passed down through \code{timeit}).
@@ -145,15 +156,15 @@ determine_replications <- function( call, interval, base=1E6 ) {
 #' and then infer the run-time as \code{<time>/replications}.
 #' by default, the argument is \code{NULL} and we attempt to infer an
 #' appropriate number of replications.
-#' @param memory.profiling logical. write memory use information to file?
+#' @param memory.profiling logical. include memory use in output?
 #' @param show.warnings boolean. output a warning if any iteration of the
 #' run did not produce results?
 #' @param i integer. the iteration number. primarily for use from \code{\link{timeit}}.
 #' @param gcFirst boolean. run the garbage collector before any evaluation of the function call?
-#' @param gcDuring boolean. run the garbage collector before each interation, as produced
+#' @param gcDuring boolean. run the garbage collector before each iteration, as produced
 #' by \code{replications}? (very slow)
 #' @export
-#' @return a data.frame of the profiling times
+#' @return A data.frame of the profiling times.
 do_timeit <- function(call, 
                       replications=NULL,
                       interval=0.005, 
@@ -182,25 +193,25 @@ do_timeit <- function(call,
   
   if( gcFirst ) gc(FALSE)
   
-  tmp <- tempfile()
-  on.exit( unlink(tmp) )
+  ..tmp.. <- tempfile()
+  on.exit( unlink(..tmp..) )
   
   timeit_invisible <- invisible
   timeit_eval <- eval
   timeit_gc <- gc
   
-  timeit_replicate <- function( replications, call ) {
+  timeit_replicate <- function( replications, .call ) {
     for( i in 1:replications ) {
       if( gcDuring ) timeit_invisible( timeit_gc(FALSE) )
-      timeit_invisible( timeit_eval( call ) )
+      timeit_invisible( timeit_eval( .call ) )
     }
   }
     
-  Rprof( tmp, interval=interval, memory.profiling=memory.profiling )
+  Rprof( ..tmp.., interval=interval, memory.profiling=memory.profiling )
   timeit_replicate( replications, call_me )
   Rprof(NULL)
   
-  out <- tryCatch( summaryRprof(tmp, memory=memory),
+  out <- tryCatch( summaryRprof(..tmp.., memory=memory),
                    error = function(e) {
                      if( show.warnings ) warning("no events recorded for iteration ", i )
                      return( invisible(NULL) )
@@ -215,7 +226,7 @@ do_timeit <- function(call,
     }
     
     out$replications <- replications
-    out$iter <- i
+    out$iteration <- i
     out$func <- rownames(out)
   
     ## remove the f'ns we don't need to know about
@@ -273,15 +284,17 @@ summary.timeit <- function( object, ... ) {
 #' @S3method plot timeit
 plot.timeit <- function( x, y=NULL, min.pct=5, ... ) {
   
-  require("ggplot2")
+  if( !require("ggplot2") ) {
+    stop("plotting requires ggplot2")
+  }
   
   if( min.pct < 0 || min.pct > 100 ) {
     stop( "min.pct must be between 0 and 100" )
   }
   
-  num_iter <- max( x$iter )
+  num_iteration <- max( x$iteration )
   overall_times <- with( x, tapply( self.pct, func, function(x) {
-    sum( x / num_iter )
+    sum( x / num_iteration )
   } ) )
   keep <- names(overall_times)[ overall_times > min.pct ]
   x <- x[ x$func %in% keep, , drop=FALSE ]
@@ -312,8 +325,7 @@ plot.timeit <- function( x, y=NULL, min.pct=5, ... ) {
            geom_point( pch=21, fill="red", col="black", alpha=0.4 ) +
            xlab("") +
            ylab( paste( sep="", "Time (", names(use.time), ")" ) ) + 
-           ggtitle( paste( sep="", "Time (", names(use.time), ")",
-                           " spent in each function call" ) ) +
+           ggtitle( paste( sep="", "Time spent in each function call" ) ) +
            coord_flip()
   )
   
@@ -330,12 +342,12 @@ plot.timeit <- function( x, y=NULL, min.pct=5, ... ) {
 #' @method mean timeit
 mean.timeit <- function(x, ...) {
   names <- names(x)
-  n <- max( x$iter )
+  n <- max( x$iteration )
   fun <- function(x) {
     return( sum(x) / n )
   }
   out <- aggregate( x[ !(names(x) %in% "func") ], x["func"], FUN=fun )
   out$replications <- out$replications * n
-  out$iter <- tapply( x$iter, x$func, length )
+  out$iterations <- tapply( x$iteration, x$func, length )
   out[ order(out$self.time, decreasing=TRUE), ]
 }
